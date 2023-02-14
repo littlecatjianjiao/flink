@@ -316,6 +316,14 @@ public class StreamGraphGenerator {
                 configuration.get(
                         ExecutionCheckpointingOptions.ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH));
         shouldExecuteInBatchMode = shouldExecuteInBatchMode();
+        Optional<JobManagerOptions.SchedulerType> schedulerTypeOptional =
+                executionConfig.getSchedulerType();
+        boolean dynamic =
+                shouldExecuteInBatchMode
+                        && schedulerTypeOptional.orElse(
+                                        JobManagerOptions.SchedulerType.AdaptiveBatch)
+                                == JobManagerOptions.SchedulerType.AdaptiveBatch;
+        streamGraph.setDynamic(dynamic);
         configureStreamGraph(streamGraph);
 
         alreadyTransformed = new IdentityHashMap<>();
@@ -327,15 +335,6 @@ public class StreamGraphGenerator {
         streamGraph.setSlotSharingGroupResource(slotSharingGroupResources);
 
         setFineGrainedGlobalStreamExchangeMode(streamGraph);
-
-        Optional<JobManagerOptions.SchedulerType> schedulerTypeOptional =
-                executionConfig.getSchedulerType();
-        boolean dynamic =
-                shouldExecuteInBatchMode
-                        && schedulerTypeOptional.orElse(
-                                        JobManagerOptions.SchedulerType.AdaptiveBatch)
-                                == JobManagerOptions.SchedulerType.AdaptiveBatch;
-        streamGraph.setDynamic(dynamic);
 
         for (StreamNode node : streamGraph.getStreamNodes()) {
             if (node.getInEdges().stream().anyMatch(this::shouldDisableUnalignedCheckpointing)) {
